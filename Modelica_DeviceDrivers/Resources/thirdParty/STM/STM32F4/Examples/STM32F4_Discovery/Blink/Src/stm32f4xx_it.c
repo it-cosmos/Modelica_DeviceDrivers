@@ -53,6 +53,8 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+extern TIM_HandleTypeDef    TimHandle;
+
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -165,6 +167,15 @@ void SysTick_Handler(void)
 /*  file (startup_stm32f4xx.s).                                               */
 /******************************************************************************/
 
+/**
+  * @brief  This function handles TIM interrupt request.
+  * @param  None
+  * @retval None
+  */
+void TIMx_IRQHandler(void)
+{
+	HAL_TIM_IRQHandler(&TimHandle);
+}
 /**
   * @brief  This function handles External line 0 interrupt request.
   * @param  None

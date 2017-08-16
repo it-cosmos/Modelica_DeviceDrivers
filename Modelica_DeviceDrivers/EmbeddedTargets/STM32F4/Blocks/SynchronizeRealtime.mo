@@ -14,6 +14,14 @@ block SynchronizeRealtime "A pseudo realtime synchronization"
     enable = true,
     tab = "General",
     group = "Constants"));
+  constant Integer timerFrequency annotation(Dialog(
+    enable = true,
+    tab = "General",
+    group = "Constants"));
+  constant Integer timerPeriod annotation(Dialog(
+    enable = true,
+    tab = "General",
+    group = "Constants"));
   constant Types.Clock clock annotation(Dialog(
     enable = true,
     tab = "General",
@@ -59,7 +67,7 @@ block SynchronizeRealtime "A pseudo realtime synchronization"
     tab = "General",
     group = "Constants"));
 protected
-  Functions.RealTimeSynchronization.Init sync =      Functions.RealTimeSynchronization.Init(hal, clock, pllM, pllN, pllP,pllQ, ahbPre, apb1Pre, apb2Pre, pwrRegVoltage, overdrive, preFlash);
+  Functions.RealTimeSynchronization.Init sync =      Functions.RealTimeSynchronization.Init(hal, timerFrequency, timerPeriod, clock, pllM, pllN, pllP,pllQ, ahbPre, apb1Pre, apb2Pre, pwrRegVoltage, overdrive, preFlash);
   constant Integer desiredPeriod = if desiredFrequency == 0 then 0 else integer(floor(1000/desiredFrequency));
   Integer tick(start=0);//TODO should be HALGetTick
 algorithm

@@ -90,6 +90,8 @@ OBJ=Debug/Example/Blink_main.o \
     Debug/Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc.o \
     Debug/Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc_ex.o \
     Debug/Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_spi.o \
+    Debug/Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_tim.o \
+    Debug/Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_tim_ex.o \
     Debug/Example/TrueSTUDIO/startup_stm32f407xx.o
 
 Debug/BSP/STM32F4-Discovery/%.o: $(STM23F4CUBEROOT)/Drivers/BSP/STM32F4-Discovery/%.c

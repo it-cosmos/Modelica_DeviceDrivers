@@ -3,6 +3,7 @@
 
 #include <main.h>
 
+
 #if defined(STM32F405xx) || defined(STM32F407xx) || defined(STM32F415xx) || defined(STM32F417xx)
 const uint16_t MOD2BSP_VoltageScale[2] = {PWR_REGULATOR_VOLTAGE_SCALE1, PWR_REGULATOR_VOLTAGE_SCALE2};
 #else
@@ -14,12 +15,19 @@ const uint16_t MOD2BSP_AHBCLKDivider[9] = { RCC_SYSCLK_DIV1, RCC_SYSCLK_DIV2, RC
 						RCC_SYSCLK_DIV16, RCC_SYSCLK_DIV64, RCC_SYSCLK_DIV128, RCC_SYSCLK_DIV256, RCC_SYSCLK_DIV512,};
 const uint16_t MOD2BSP_APBCLKDivider[5] = { RCC_HCLK_DIV1, RCC_HCLK_DIV2, RCC_HCLK_DIV4, RCC_HCLK_DIV8, RCC_HCLK_DIV16};
 
+TIM_HandleTypeDef TimHandle;
+uint32_t uwPrescalerValue = 0;
+__IO uint8_t interrupt = 0;
 
-static inline void* MDD_stm32f4_rt_init(void* time, int clock, int pllM, int pllN, int pllP, int pllQ,
+
+static inline void* MDD_stm32f4_rt_init(void* time, int timerFrequency, int timerPeriod, int clock, int pllM, int pllN, int pllP, int pllQ,
 					int ahbPre, int apb1Pre, int apb2Pre, int voltageScale,  int overdrive, int prefetchBufEnable)
 {
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_OscInitTypeDef RCC_OscInitStruct;
+
+  uint16_t APB1pre = 0;
+  uint16_t factor = 0;
 
   /* Enable Power Control clock */
   __HAL_RCC_PWR_CLK_ENABLE();
@@ -103,6 +111,26 @@ static inline void* MDD_stm32f4_rt_init(void* time, int clock, int pllM, int pll
       }
   }
 
+  APB1pre = (1 << (apb1Pre - 1));
+  if (apb1Pre == 1) factor = 1; else factor = 2;
+  uwPrescalerValue = (uint32_t) (SystemCoreClock * factor/(APB1pre*timerFrequency) - 1);
+
+  /* Set TIMx instance */
+  TimHandle.Instance = TIMx;
+  TimHandle.Init.Period = timerPeriod - 1;
+  TimHandle.Init.Prescaler = uwPrescalerValue;
+  TimHandle.Init.ClockDivision = 0;
+  TimHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
+  if(HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
+  {
+    exit(1);
+  }
+  if(HAL_TIM_Base_Start_IT(&TimHandle) != HAL_OK)
+  {
+    /* Starting Error */
+    exit(1);
+  }
+				 
   return time;
 
 }
@@ -118,7 +146,33 @@ static inline void MDD_stm32f4_rt_close(void *rt)
  */
 static inline void MDD_stm32f4_rt_wait(void *timer,uint32_t tick)
 {
-  while (HAL_GetTick() <= tick) {};
+  //while (HAL_GetTick() <= tick) {};
+  while (interrupt == 0) {};
+  interrupt = 0;
 }
 
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @param  htim: TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	interrupt = 1;
+	BSP_LED_Toggle(LED4);
+}
 #endif
+void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim)
+{
+  /*##-1- Enable peripherals and GPIO Clocks #################################*/
+  /* TIMx Peripheral clock enable */
+  __HAL_RCC_TIM3_CLK_ENABLE();
+
+  /*##-2- Configure the NVIC for TIMx ########################################*/
+  /* Set Interrupt Group Priority */
+  HAL_NVIC_SetPriority(TIMx_IRQn, 4, 0);
+
+  /* Enable the TIMx global Interrupt */
+  HAL_NVIC_EnableIRQ(TIMx_IRQn);
+}
