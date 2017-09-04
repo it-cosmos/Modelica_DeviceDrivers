@@ -18,16 +18,46 @@ const uint16_t MOD2BSP_APBCLKDivider[5] = { RCC_HCLK_DIV1, RCC_HCLK_DIV2, RCC_HC
 TIM_HandleTypeDef TimHandle;
 uint32_t uwPrescalerValue = 0;
 __IO uint8_t interrupt = 0;
+static inline void* MDD_stm32f4_rt_init(void* papb1Pre, int timerFrequency, int timerPeriod)
+{
+  uint16_t APB1pre = 0;
+  uint16_t factor = 0;
+  int apb1Pre = (int)papb1Pre;
+  
+  APB1pre = (1 << (apb1Pre - 1));
+  if (apb1Pre == 1) factor = 1; else factor = 2;
+  uwPrescalerValue = (uint32_t) (SystemCoreClock * factor/(APB1pre*timerFrequency) - 1);
 
+  /* Set TIMx instance */
+  TimHandle.Instance = TIMx;
+  TimHandle.Init.Period = timerPeriod - 1;
+  TimHandle.Init.Prescaler = uwPrescalerValue;
+  TimHandle.Init.ClockDivision = 0;
+  TimHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
+  if(HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
+  {
+    exit(1);
+  }
+  if(HAL_TIM_Base_Start_IT(&TimHandle) != HAL_OK)
+  {
+    /* Starting Error */
+    exit(1);
+  }
+				 
+  return papb1Pre;
 
-static inline void* MDD_stm32f4_rt_init(void* time, int timerFrequency, int timerPeriod, int clock, int pllM, int pllN, int pllP, int pllQ,
+}
+static inline void* MDD_stm32f4_clock_close(void *rt)
+{
+	return rt;
+}
+
+static inline void* MDD_stm32f4_clock_config(void* time,  int clock, int pllM, int pllN, int pllP, int pllQ,
 					int ahbPre, int apb1Pre, int apb2Pre, int voltageScale,  int overdrive, int prefetchBufEnable)
 {
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_OscInitTypeDef RCC_OscInitStruct;
 
-  uint16_t APB1pre = 0;
-  uint16_t factor = 0;
 
   /* Enable Power Control clock */
   __HAL_RCC_PWR_CLK_ENABLE();
@@ -63,10 +93,10 @@ static inline void* MDD_stm32f4_rt_init(void* time, int timerFrequency, int time
     break;
   }
   
-  RCC_OscInitStruct.PLL.PLLM = pllM;//8;
-  RCC_OscInitStruct.PLL.PLLN = pllN;//3;
-  RCC_OscInitStruct.PLL.PLLP = MOD2BSP_PLLP[pllP - 1];//RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = pllQ;//7;
+  RCC_OscInitStruct.PLL.PLLM = pllM;
+  RCC_OscInitStruct.PLL.PLLN = pllN;
+  RCC_OscInitStruct.PLL.PLLP = MOD2BSP_PLLP[pllP - 1];
+  RCC_OscInitStruct.PLL.PLLQ = pllQ;
   if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     exit(1);
@@ -94,9 +124,9 @@ static inline void* MDD_stm32f4_rt_init(void* time, int timerFrequency, int time
     RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
     break;
   }
-  RCC_ClkInitStruct.AHBCLKDivider = MOD2BSP_AHBCLKDivider[ahbPre - 1];//RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = MOD2BSP_APBCLKDivider[apb1Pre - 1];//RCC_HCLK_DIV4;  
-  RCC_ClkInitStruct.APB2CLKDivider = MOD2BSP_APBCLKDivider[apb2Pre - 1];//RCC_HCLK_DIV2;  
+  RCC_ClkInitStruct.AHBCLKDivider = MOD2BSP_AHBCLKDivider[ahbPre - 1];
+  RCC_ClkInitStruct.APB1CLKDivider = MOD2BSP_APBCLKDivider[apb1Pre - 1]; 
+  RCC_ClkInitStruct.APB2CLKDivider = MOD2BSP_APBCLKDivider[apb2Pre - 1];  
   if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     exit(1);
@@ -110,28 +140,7 @@ static inline void* MDD_stm32f4_rt_init(void* time, int timerFrequency, int time
 	__HAL_FLASH_PREFETCH_BUFFER_ENABLE();
       }
   }
-
-  APB1pre = (1 << (apb1Pre - 1));
-  if (apb1Pre == 1) factor = 1; else factor = 2;
-  uwPrescalerValue = (uint32_t) (SystemCoreClock * factor/(APB1pre*timerFrequency) - 1);
-
-  /* Set TIMx instance */
-  TimHandle.Instance = TIMx;
-  TimHandle.Init.Period = timerPeriod - 1;
-  TimHandle.Init.Prescaler = uwPrescalerValue;
-  TimHandle.Init.ClockDivision = 0;
-  TimHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
-  if(HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
-  {
-    exit(1);
-  }
-  if(HAL_TIM_Base_Start_IT(&TimHandle) != HAL_OK)
-  {
-    /* Starting Error */
-    exit(1);
-  }
-				 
-  return time;
+  return (void*)apb1Pre;
 
 }
 
@@ -144,7 +153,7 @@ static inline void MDD_stm32f4_rt_close(void *rt)
 /* The wait routine actually starts the clock.
  * This is done after initialization to avoid weird behaviour
  */
-static inline void MDD_stm32f4_rt_wait(void *timer,uint32_t tick)
+static inline void MDD_stm32f4_rt_wait(void *timer)
 {
   //while (HAL_GetTick() <= tick) {};
   while (interrupt == 0) {};

@@ -1,6 +1,7 @@
 Microcontroller
 DigitalReadBoolean
 DigitalWriteBoolean
+ClockConfig
 SynchronizeRealtime
 Led
 ExtInt

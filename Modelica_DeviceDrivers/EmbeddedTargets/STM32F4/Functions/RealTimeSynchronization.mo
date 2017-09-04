@@ -4,12 +4,11 @@ extends .Modelica.Icons.Package;
 
 function wait
   extends .Modelica.Icons.Function;
-  import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Functions.HAL;
   input Init rt;
-  input Integer tick;
-  external "C" MDD_stm32f4_rt_wait(rt, tick)
+  external "C" MDD_stm32f4_rt_wait(rt)
   annotation (Include="#include \"MDDSTM32F4RealTime.h\"");
 end wait;
+
 
 
 
@@ -24,25 +23,14 @@ class Init "Initialize STM32F4 real-time synchronization"
   function constructor
     import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Functions.Timers;
     import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Types;
-    import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Functions.HAL;
+    import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Functions.ClockConfig;
     extends .Modelica.Icons.Function;
-    input HAL.Init init;
+    input ClockConfig.Init init;
     input Integer timerFrequency;
     input Integer timerPeriod;
-    input Types.Clock clock;
-    input Types.PLLM pllM;
-    input Types.PLLN pllN;
-    input Types.PLLP pllP;
-    input Types.PLLQ pllQ;
-    input Types.AHBPre ahbPre;
-    input Types.APBPre apb1Pre;
-    input Types.APBPre apb2Pre;
-    input Types.PWRRegulatorVoltage voltageScale;
-    input Boolean overdrive;
-    input Boolean prefetchBufferEnable;
     
     output Init rt;
-    external "C" rt = MDD_stm32f4_rt_init(init, timerFrequency, timerPeriod, clock, pllM, pllN, pllP, pllQ, ahbPre, apb1Pre, apb2Pre, voltageScale, overdrive, prefetchBufferEnable)
+    external "C" rt = MDD_stm32f4_rt_init(init, timerFrequency, timerPeriod)
     annotation (Include="#include \"MDDSTM32F4RealTime.h\"");
   end constructor;
 

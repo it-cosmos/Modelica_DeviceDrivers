@@ -132,6 +132,7 @@ static inline void* MDD_stm32f4_exti_pin_init(void* handle, int port, int pin, i
 
 static inline void* MDD_stm32f4_exti_pin_close(void* in_port)
 {
+  return in_port;
 }
 
 static inline int MDD_stm32f4_digital_pin_read(void *in_port, int pin)
@@ -145,6 +146,7 @@ static inline int MDD_stm32f4_digital_pin_read(void *in_port, int pin)
 
 static inline void* MDD_stm32f4_digital_pin_close(void* handle)
 {
+  return handle;
 }
 
 static inline void MDD_stm32f4_digital_pin_write(void *in_port, int pin, int value)

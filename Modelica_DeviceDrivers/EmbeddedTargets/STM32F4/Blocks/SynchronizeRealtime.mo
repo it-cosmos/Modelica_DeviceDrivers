@@ -4,13 +4,13 @@ block SynchronizeRealtime "A pseudo realtime synchronization"
   import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Constants;
   import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Types;
   import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Functions;
-  import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Functions.HAL;
+  import Modelica_DeviceDrivers.EmbeddedTargets.STM32F4.Functions.ClockConfig;
   outer Microcontroller mcu;
   constant SIunits.Frequency desiredFrequency=mcu.desiredFrequency "Override the MCU global real-time settings" annotation(Dialog(
     enable = true,
     tab = "General",
     group = "Constants"));
-  constant HAL.Init hal annotation(Dialog(
+  constant ClockConfig.Init clockConf annotation(Dialog(
     enable = true,
     tab = "General",
     group = "Constants"));
@@ -22,58 +22,14 @@ block SynchronizeRealtime "A pseudo realtime synchronization"
     enable = true,
     tab = "General",
     group = "Constants"));
-  constant Types.Clock clock annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Types.PLLM pllM annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Types.PLLN pllN annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Types.PLLP pllP annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Types.PLLQ pllQ annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Types.AHBPre ahbPre annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Types.APBPre apb1Pre annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Types.APBPre apb2Pre annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Types.PWRRegulatorVoltage pwrRegVoltage annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Boolean overdrive annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
-  constant Boolean preFlash annotation(Dialog(
-    enable = true,
-    tab = "General",
-    group = "Constants"));
+  final parameter Real actualInterval = timerPeriod/timerFrequency;
 protected
-  Functions.RealTimeSynchronization.Init sync =      Functions.RealTimeSynchronization.Init(hal, timerFrequency, timerPeriod, clock, pllM, pllN, pllP,pllQ, ahbPre, apb1Pre, apb2Pre, pwrRegVoltage, overdrive, preFlash);
+
+  Functions.RealTimeSynchronization.Init sync =      Functions.RealTimeSynchronization.Init(clockConf, timerFrequency, timerPeriod);
   constant Integer desiredPeriod = if desiredFrequency == 0 then 0 else integer(floor(1000/desiredFrequency));
-  Integer tick(start=0);//TODO should be HALGetTick
 algorithm
   if not initial() then
-    tick := tick +  desiredPeriod; 
-    Functions.RealTimeSynchronization.wait(sync, tick);
+    Functions.RealTimeSynchronization.wait(sync);
   end if;
 annotation(Icon(graphics = {Text(extent = {{-100, -100}, {100, 100}}, textString = "Real-time:\n%desiredFrequency Hz", fontName = "Arial")}, coordinateSystem(initialScale = 0.1)));
 end SynchronizeRealtime;
